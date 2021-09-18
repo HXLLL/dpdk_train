@@ -122,8 +122,8 @@ struct rte_mempool *mbuf_pool;
 struct rte_ether_hdr *eth_hdr;
 uint64_t *msg;
 
-struct rte_ether_addr s_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xa5, 0x9b}};
-struct rte_ether_addr d_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xb2, 0xeb}};
+struct rte_ether_addr s_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xa5, 0x9a}};
+struct rte_ether_addr d_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xb2, 0xea}};
 uint16_t ether_type = 0x0a00;
 struct rte_mbuf *pkt[BURST_SIZE];
 
@@ -140,7 +140,7 @@ uint64_t  send_timestamp(void) {
     pkt[0]->data_len = pkt_size;
     pkt[0]->pkt_len = pkt_size;
 
-    int nb_tx = rte_eth_tx_burst(1, 0, pkt, 1);
+    int nb_tx = rte_eth_tx_burst(0, 0, pkt, 1);
 
     rte_pktmbuf_free(pkt[0]);
     return now;
@@ -150,7 +150,7 @@ uint64_t recv_response(void) {
 
     pkt[0] = rte_pktmbuf_alloc(mbuf_pool);
     while (!nb_rx) {
-        nb_rx = rte_eth_rx_burst(1, 0, pkt, BURST_SIZE);
+        nb_rx = rte_eth_rx_burst(0, 0, pkt, BURST_SIZE);
     }
     msg = (uint64_t*)(rte_pktmbuf_mtod(pkt[0], char*) + sizeof(struct rte_ether_hdr));
     rte_pktmbuf_free(pkt[0]);
