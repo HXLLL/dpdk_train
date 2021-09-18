@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "inttypes.h": "c",
+        "rte_eal.h": "c",
+        "rte_mbuf.h": "c",
+        "rte_cycles.h": "c",
+        "rte_ethdev.h": "c"
+    }
+}
