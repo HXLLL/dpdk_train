@@ -145,7 +145,7 @@ uint64_t send_timestamp(void) {
         pkt[i]->pkt_len = pkt_size;
     }
 
-    int nb_tx = rte_eth_tx_burst(1, 0, pkt, BURST_SIZE-out_packets);
+    int nb_tx = rte_eth_tx_burst(2, 0, pkt, BURST_SIZE-out_packets);
 
     //for (i=0;i!=BURST_SIZE-out_packets;i++) {
     //    rte_pktmbuf_free(pkt[i]);
@@ -160,7 +160,7 @@ uint64_t recv_response(void) {
     int nb_rx=0,i;
 
     while (!nb_rx) {
-        nb_rx = rte_eth_rx_burst(1, 0, pkt, BURST_SIZE);
+        nb_rx = rte_eth_rx_burst(2, 0, pkt, BURST_SIZE);
     }
     msg = (uint64_t*)(rte_pktmbuf_mtod(pkt[0], char*) + sizeof(struct rte_ether_hdr));
 

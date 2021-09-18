@@ -162,7 +162,7 @@ main(int argc, char *argv[])
 		 * Receive packets on a port and forward them on the paired
 		 * port. The mapping is 0 -> 1, 1 -> 0, 2 -> 3, 3 -> 2, etc.
 		 */
-        int port = 1;
+        int port = 0;
 
         /* Get burst of RX packets, from first port of pair. */
         struct rte_mbuf *pkt[BURST_SIZE];
