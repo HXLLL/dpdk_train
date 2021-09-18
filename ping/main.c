@@ -49,7 +49,7 @@
 #define BURST_SIZE 32
 
 static const struct rte_eth_conf port_conf_default = {
-	.rxmode = { .max_rx_pkt_len = ETHER_MAX_LEN }
+	.rxmode = { .max_rx_pkt_len = RTE_ETHER_MAX_LEN }
 };
 
 /* basicfwd.c: Basic DPDK skeleton forwarding example. */
@@ -68,7 +68,7 @@ port_init(uint8_t port, struct rte_mempool *mbuf_pool)
 	int retval;
 	uint16_t q;
 
-	if (port >= rte_eth_dev_count())
+	if (port >= rte_eth_dev_count_avail())
 		return -1;
 
 	/* Configure the Ethernet device. */
@@ -102,7 +102,7 @@ port_init(uint8_t port, struct rte_mempool *mbuf_pool)
 		return retval;
 
 	/* Display the port MAC address. */
-	struct ether_addr addr;
+	struct rte_ether_addr addr;
 	rte_eth_macaddr_get(port, &addr);
 	printf("Port %u MAC: %02" PRIx8 " %02" PRIx8 " %02" PRIx8
 			   " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "\n",
@@ -119,24 +119,24 @@ port_init(uint8_t port, struct rte_mempool *mbuf_pool)
 
 struct rte_mempool *mbuf_pool;
 
-struct ether_hdr *eth_hdr;
+struct rte_ether_hdr *eth_hdr;
 uint64_t *msg;
 
-struct ether_addr s_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xa5, 0x9b}};
-struct ether_addr d_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xb2, 0xeb}};
+struct rte_ether_addr s_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xa5, 0x9b}};
+struct rte_ether_addr d_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xb2, 0xeb}};
 uint16_t ether_type = 0x0a00;
 struct rte_mbuf *pkt[BURST_SIZE];
 
 uint64_t  send_timestamp(void) {
     pkt[0] = rte_pktmbuf_alloc(mbuf_pool);
-    eth_hdr = rte_pktmbuf_mtod(pkt[0], struct ether_hdr*);
+    eth_hdr = rte_pktmbuf_mtod(pkt[0], struct rte_ether_hdr*);
     eth_hdr->d_addr = d_addr;
     eth_hdr->s_addr = s_addr;
     eth_hdr->ether_type = ether_type;
-    msg = (uint64_t*) (rte_pktmbuf_mtod(pkt[0], char*) + sizeof(struct ether_hdr));
+    msg = (uint64_t*) (rte_pktmbuf_mtod(pkt[0], char*) + sizeof(struct rte_ether_hdr));
     uint64_t now = rte_rdtsc();
     *msg = now;
-    int pkt_size = sizeof(uint64_t) + sizeof(struct ether_hdr);
+    int pkt_size = sizeof(uint64_t) + sizeof(struct rte_ether_hdr);
     pkt[0]->data_len = pkt_size;
     pkt[0]->pkt_len = pkt_size;
 
@@ -152,7 +152,7 @@ uint64_t recv_response(void) {
     while (!nb_rx) {
         nb_rx = rte_eth_rx_burst(1, 0, pkt, BURST_SIZE);
     }
-    msg = (uint64_t*)(rte_pktmbuf_mtod(pkt[0], char*) + sizeof(struct ether_hdr));
+    msg = (uint64_t*)(rte_pktmbuf_mtod(pkt[0], char*) + sizeof(struct rte_ether_hdr));
     rte_pktmbuf_free(pkt[0]);
     return *msg;
 }
@@ -176,7 +176,7 @@ main(int argc, char *argv[])
     argv += ret;
 
     /* Check that there is an even number of ports to send/receive on. */
-    nb_ports = rte_eth_dev_count();
+    nb_ports = rte_eth_dev_count_avail();
     if (nb_ports < 2 || (nb_ports & 1))
         rte_exit(EXIT_FAILURE, "Error: number of ports must be even\n");
 

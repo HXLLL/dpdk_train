@@ -47,7 +47,7 @@
 #define BURST_SIZE 32
 
 static const struct rte_eth_conf port_conf_default = {
-	.rxmode = { .max_rx_pkt_len = ETHER_MAX_LEN }
+	.rxmode = { .max_rx_pkt_len = RTE_ETHER_MAX_LEN }
 };
 
 /* basicfwd.c: Basic DPDK skeleton forwarding example. */
@@ -66,7 +66,7 @@ port_init(uint8_t port, struct rte_mempool *mbuf_pool)
 	int retval;
 	uint16_t q;
 
-	if (port >= rte_eth_dev_count())
+	if (port >= rte_eth_dev_count_avail())
 		return -1;
 
 	/* Configure the Ethernet device. */
@@ -100,7 +100,7 @@ port_init(uint8_t port, struct rte_mempool *mbuf_pool)
 		return retval;
 
 	/* Display the port MAC address. */
-	struct ether_addr addr;
+	struct rte_ether_addr addr;
 	rte_eth_macaddr_get(port, &addr);
 	printf("Port %u MAC: %02" PRIx8 " %02" PRIx8 " %02" PRIx8
 			   " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "\n",
@@ -135,7 +135,7 @@ main(int argc, char *argv[])
 	argv += ret;
 
 	/* Check that there is an even number of ports to send/receive on. */
-	nb_ports = rte_eth_dev_count();
+	nb_ports = rte_eth_dev_count_avail();
 	if (nb_ports < 2 || (nb_ports & 1))
 		rte_exit(EXIT_FAILURE, "Error: number of ports must be even\n");
 
@@ -175,10 +175,10 @@ main(int argc, char *argv[])
             continue;
 
         char *msg;
-        struct ether_hdr *eth_hdr;
-        struct ether_addr tmp;
+        struct rte_ether_hdr *eth_hdr;
+        struct rte_ether_addr tmp;
 
-        eth_hdr = rte_pktmbuf_mtod(pkt[0], struct ether_hdr*);
+        eth_hdr = rte_pktmbuf_mtod(pkt[0], struct rte_ether_hdr*);
         tmp = eth_hdr->s_addr;
         eth_hdr->s_addr = eth_hdr->d_addr;
         eth_hdr->d_addr = tmp;
@@ -194,8 +194,8 @@ main(int argc, char *argv[])
 
         uint16_t nb_tx = rte_eth_tx_burst(port, 0, pkt, 1);
 
-        msg = ((rte_pktmbuf_mtod(pkt[0],char*)) + sizeof(struct ether_hdr));
-        printf("%llu\n", *(uint64_t*)msg);
+        msg = ((rte_pktmbuf_mtod(pkt[0],char*)) + sizeof(struct rte_ether_hdr));
+        printf("%lu\n", *(uint64_t*)msg);
 
         rte_pktmbuf_free(pkt[0]);
     }
