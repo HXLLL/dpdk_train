@@ -5,7 +5,7 @@
 APP = ping
 
 # all source are stored in SRCS-y
-SRCS-y := main.c
+SRCS-y := main.c ../utils/*.c
 
 PKGCONF ?= pkg-config
 

@@ -31,6 +31,8 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../utils/argparse.h"
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -47,6 +49,12 @@
 #define NUM_MBUFS 8191
 #define MBUF_CACHE_SIZE 250
 #define BURST_SIZE 32
+
+int ARGS_port=0, ARGS_cnt=4;
+struct argparse_option options[] = {
+    OPT_INTEGER('p', "port", &ARGS_port, "port to send & recv"),
+    OPT_INTEGER('c', "cnt", &ARGS_cnt, "amount of data to send"),
+};
 
 static const struct rte_eth_conf port_conf_default = {
 	.rxmode = { .max_rx_pkt_len = RTE_ETHER_MAX_LEN }
@@ -174,6 +182,13 @@ main(int argc, char *argv[])
 
     argc -= ret;
     argv += ret;
+
+    /* Parse custom parameters. */
+    struct argparse argparse;
+    argparse_init(&argparse, options, NULL, 0);
+    argc = argparse_parse(&argparse, argc, argv);
+
+    printf("cnt:%d port:%d\n", ARGS_cnt, ARGS_port);
 
     /* Check that there is an even number of ports to send/receive on. */
     nb_ports = rte_eth_dev_count_avail();
