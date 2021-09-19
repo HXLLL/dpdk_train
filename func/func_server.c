@@ -133,8 +133,8 @@ struct rte_mempool *mbuf_pool;
 
 uint64_t *msg;
 
-struct rte_ether_addr s_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xa5, 0x9a}};
-struct rte_ether_addr d_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xb2, 0xea}};
+struct rte_ether_addr s_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xb2, 0xea}};
+struct rte_ether_addr d_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xa5, 0x9a}};
 uint16_t ether_type = 0x0a00;
 struct rte_mbuf *send_buffer[BURST_SIZE];
 struct rte_mbuf *recv_buffer[BURST_SIZE];
@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
     uint64_t last_report = rte_rdtsc(), start_time = rte_rdtsc();
     uint64_t total_cnt;
     double every_second = 1.0;
-    uint64_t every = (int)(every_second * rte_get_tsc_hz());
+    uint64_t every = (uint64_t)(every_second * rte_get_tsc_hz());
     uint64_t report_cnt = 0;
     INFO("%s", "start listening");
     for (;;) {
@@ -229,10 +229,10 @@ int main(int argc, char *argv[])
             recv_buffer[i] = NULL;
         }
         int nb_tx = rte_eth_tx_burst(ARGS_port, 0, send_buffer, nb_rx);
-        INFO("sent %d resps", nb_rx);
+        INFO("sent %d resps", nb_tx);
 
         report_cnt += nb_tx;
-
+        sleep(1);
         if (rte_rdtsc() - last_report > every) {
             printf("tput: %.3lf\n", report_cnt / every_second);
             report_cnt = 0;

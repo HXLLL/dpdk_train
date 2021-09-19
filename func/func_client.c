@@ -248,21 +248,22 @@ int main(int argc, char *argv[])
     uint64_t report_cnt = 0;
     INFO("%s", "begin to send reqs");
     for (i=1;i<=ARGS_n;++i) {
+        sleep(1);
         int nb_rx = rte_eth_rx_burst(ARGS_port, 0, recv_buffer, BURST_SIZE);
         outstanding -= nb_rx;
         report_cnt += nb_rx;
-        INFO("received %d resp", nb_rx);
+        INFO("received %d resp, outstanding=%d", nb_rx, outstanding);
         for (int i=0;i!=nb_rx;++i) {
             rte_pktmbuf_free(recv_buffer[i]);
             recv_buffer[i] = NULL;
         }
-        // for (int j=0;j!=nb_rx;++j) {
-        //     int flag = check_response(&recv_buffer[j]);
-        //     if (!flag) {
-        //         puts("ERROR! ...");
-        //         return 0;
-        //     }
-        // }
+        for (int j=0;j!=nb_rx;++j) {
+            int flag = check_response(recv_buffer[j]);
+            if (!flag) {
+                INFO("%s", "ERROR!");
+                return 0;
+            }
+        }
 
         if (rte_rdtsc() - last_report > every) {
             printf("tput: %.3lf\n", report_cnt / every_second);
@@ -275,8 +276,6 @@ int main(int argc, char *argv[])
         INFO("sent req %d", i);
         send_request(i);
         ++outstanding;
-
-        sleep(1);
     }
     printf("avg rtt: %.3lf us\n", ARGS_n / start_time / rte_get_tsc_hz() * 1e6);
 
