@@ -53,17 +53,13 @@
 #define BURST_SIZE 32
 #define MAX_REQUEST 10000000
 
-int64_t pw(int64_t x, int64_t y, int64_t MOD) {
-    int64_t ans=1;
-    for (;y;y>>=1) { if (y&1) ans=ans*x%MOD; x=x*x%MOD; }
-    return ans;
-}
-
 int ARGS_port = 0;
 int ARGS_n = 10;
 int ARGS_outstanding = 32;
 int ARGS_base = 2;
 int ARGS_mod = 1e9+7;
+
+int64_t (*pw)(uint64_t, uint64_t, uint64_t) = pw_Ologn;
 
 struct argparse_option options[] = {
     OPT_INTEGER('p', "port", &ARGS_port, "port to send & recv"),
@@ -253,11 +249,6 @@ int main(int argc, char *argv[])
 
     if (rte_lcore_count() > 1)
         printf("\nWARNING: Too many lcores enabled. Only 1 used.\n");
-
-    int times = 4;
-    if (argc > 1) {
-        times = strtol(argv[1], NULL, 10);
-    }
 
     int i;
     uint64_t last_report = rte_rdtsc();
