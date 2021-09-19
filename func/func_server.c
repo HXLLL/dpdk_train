@@ -190,6 +190,7 @@ int main(int argc, char *argv[])
     /* Parse custom parameters. */
     struct argparse argparse;
     argparse_init(&argparse, options, NULL, 0);
+    printf("%d\n", argc);
     argc = argparse_parse(&argparse, argc, argv);
 
     /* Check that there is an even number of ports to send/receive on. */
@@ -222,6 +223,8 @@ int main(int argc, char *argv[])
         int nb_rx = rte_eth_rx_burst(ARGS_port, 0, recv_buffer, BURST_SIZE);
         for (int i=0;i!=nb_rx;++i) {
             send_buffer[i] = make_response(recv_buffer[i]);
+            rte_pktmbuf_free(recv_buffer[i]);
+            recv_buffer[i] = NULL;
         }
         int nb_tx = rte_eth_tx_burst(ARGS_port, 0, send_buffer, nb_rx);
 

@@ -191,17 +191,7 @@ int send_request(int n) {
     int nb_tx = rte_eth_tx_burst(ARGS_port, 0, send_buffer, 1);
     return 0;
 }
-int recv_response(void) {
-    int nb_rx=0;
-    for (int i=0;recv_buffer[i];) {
-        recv_buffer[i] = NULL;
-        ++i;
-    }
-    while (!nb_rx) {
-        nb_rx = rte_eth_rx_burst(ARGS_port, 0, recv_buffer, BURST_SIZE);
-    }
-    return nb_rx;
-}
+
 int check_response(struct rte_mbuf* resp) {
     struct func_response* r;
     r = ether_mtod(resp, struct func_response*);
@@ -257,9 +247,13 @@ int main(int argc, char *argv[])
     uint64_t every = (int)(every_second * rte_get_tsc_hz());
     uint64_t report_cnt = 0;
     for (i=1;i<=ARGS_n;++i) {
-        int nb_rx = recv_response();
+        int nb_rx = rte_eth_rx_burst(ARGS_port, 0, recv_buffer, BURST_SIZE);
         outstanding -= nb_rx;
         report_cnt += nb_rx;
+        for (int i=0;i!=nb_rx;++i) {
+            rte_pktmbuf_free(recv_buffer[i]);
+            recv_buffer[i] = NULL;
+        }
         // for (int j=0;j!=nb_rx;++j) {
         //     int flag = check_response(&recv_buffer[j]);
         //     if (!flag) {

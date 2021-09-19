@@ -2,7 +2,7 @@ LIB_FILE := ../utils/*.c
 
 PKGCONF ?= pkg-config
 
-CFLAGS += -O3 $(shell $(PKGCONF) --cflags libdpdk)
+CFLAGS += -g3 $(shell $(PKGCONF) --cflags libdpdk)
 LDFLAGS = $(shell $(PKGCONF) --libs libdpdk)
 
 .PHONY: all
