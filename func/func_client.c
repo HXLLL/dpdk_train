@@ -60,7 +60,6 @@ int64_t pw(int64_t x, int64_t y, int64_t MOD) {
 }
 
 int ARGS_port = 0;
-int ARGS_cnt = 4;
 int ARGS_n = 10;
 int ARGS_outstanding = 32;
 int ARGS_base = 2;
@@ -68,7 +67,6 @@ int ARGS_mod = 1e9+7;
 
 struct argparse_option options[] = {
     OPT_INTEGER('p', "port", &ARGS_port, "port to send & recv"),
-    OPT_INTEGER('c', "cnt", &ARGS_cnt, "amount of data to send"),
     OPT_INTEGER('n', NULL, &ARGS_n, "nth item to be calculated"),
     OPT_INTEGER(0, "outstanding", &ARGS_outstanding, "maximum outstanding requests"),
     OPT_INTEGER('b', "base", &ARGS_base, "power base"),
@@ -193,7 +191,7 @@ int send_request(int n) {
     send_buffer[0]->data_len = pkt_size;
     send_buffer[0]->pkt_len = pkt_size;
 
-    int nb_tx = rte_eth_tx_burst(2, 0, send_buffer, 1);
+    int nb_tx = rte_eth_tx_burst(ARGS_port, 0, send_buffer, 1);
     return 0;
 }
 int recv_response(void) {
@@ -203,7 +201,7 @@ int recv_response(void) {
         ++i;
     }
     while (!nb_rx) {
-        nb_rx = rte_eth_rx_burst(2, 0, recv_buffer, BURST_SIZE);
+        nb_rx = rte_eth_rx_burst(ARGS_port, 0, recv_buffer, BURST_SIZE);
     }
     return nb_rx;
 }
@@ -234,8 +232,6 @@ int main(int argc, char *argv[])
     struct argparse argparse;
     argparse_init(&argparse, options, NULL, 0);
     argc = argparse_parse(&argparse, argc, argv);
-
-    printf("cnt:%d port:%d\n", ARGS_cnt, ARGS_port);
 
     /* Check that there is an even number of ports to send/receive on. */
     nb_ports = rte_eth_dev_count_avail();

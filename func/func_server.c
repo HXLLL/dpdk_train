@@ -50,7 +50,8 @@
 #define MBUF_CACHE_SIZE 250
 #define BURST_SIZE 32
 
-int ARGS_port=0, ARGS_cnt=4;
+int ARGS_port=0;
+int ARGS_cnt=4;
 struct argparse_option options[] = {
     OPT_INTEGER('p', "port", &ARGS_port, "port to send & recv"),
     OPT_INTEGER('c', "cnt", &ARGS_cnt, "amount of data to send"),
@@ -153,6 +154,7 @@ uint64_t  send_timestamp(void) {
     rte_pktmbuf_free(pkt[0]);
     return now;
 }
+
 uint64_t recv_response(void) {
     int nb_rx=0;
 
@@ -210,6 +212,9 @@ main(int argc, char *argv[])
 
     if (rte_lcore_count() > 1)
         printf("\nWARNING: Too many lcores enabled. Only 1 used.\n");
+        for (;;) {
+
+        }
 
     int times = 4;
     if (argc > 1) {
