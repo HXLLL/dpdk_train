@@ -253,16 +253,14 @@ int main(int argc, char *argv[])
         outstanding -= nb_rx;
         report_cnt += nb_rx;
         INFO("received %d resp, outstanding=%d", nb_rx, outstanding);
-        for (int i=0;i!=nb_rx;++i) {
-            rte_pktmbuf_free(recv_buffer[i]);
-            recv_buffer[i] = NULL;
-        }
         for (int j=0;j!=nb_rx;++j) {
             int flag = check_response(recv_buffer[j]);
             if (!flag) {
                 INFO("%s", "ERROR!");
                 return 0;
             }
+            rte_pktmbuf_free(recv_buffer[i]);
+            recv_buffer[i] = NULL;
         }
 
         if (rte_rdtsc() - last_report > every) {
