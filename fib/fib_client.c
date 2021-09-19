@@ -50,10 +50,21 @@
 #define MBUF_CACHE_SIZE 250
 #define BURST_SIZE 32
 
-int ARGS_port=0, ARGS_cnt=4;
+int64_t pw(int64_t x, int64_t y, int64_t MOD) {
+    int64_t ans=1;
+    for (;y;y>>=1) { if (y&1) ans=ans*x%MOD; x=x*x%MOD; }
+    return ans;
+}
+
+int ARGS_port=0;
+int ARGS_cnt=4;
+int ARGS_n=10;
+int ARGS_outstanding=32;
 struct argparse_option options[] = {
     OPT_INTEGER('p', "port", &ARGS_port, "port to send & recv"),
     OPT_INTEGER('c', "cnt", &ARGS_cnt, "amount of data to send"),
+    OPT_INTEGER('n', NULL, &ARGS_n, "nth item to be calculated"),
+    OPT_INTEGER(0, "outstanding", &ARGS_outstanding, "maximum outstanding requests"),
 };
 
 static const struct rte_eth_conf port_conf_default = {
@@ -135,7 +146,7 @@ struct rte_ether_addr d_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xb2, 0xea}};
 uint16_t ether_type = 0x0a00;
 struct rte_mbuf *pkt[BURST_SIZE];
 
-uint64_t  send_timestamp(void) {
+uint64_t  send_request(void) {
     pkt[0] = rte_pktmbuf_alloc(mbuf_pool);
     eth_hdr = rte_pktmbuf_mtod(pkt[0], struct rte_ether_hdr*);
     eth_hdr->d_addr = d_addr;
@@ -172,6 +183,10 @@ uint64_t recv_response(void) {
     int
 main(int argc, char *argv[])
 {
+    for (int i=1;i<=64;++i) {
+        printf("%ld\n", pw(2, i, 1e9+7));
+    }
+    return 0;
     unsigned nb_ports;
     uint8_t portid;
 
