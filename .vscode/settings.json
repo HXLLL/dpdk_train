@@ -6,5 +6,5 @@
         "rte_cycles.h": "c",
         "rte_ethdev.h": "c"
     },
-    "terminal.integrated.cwd": "${workspaceFolder}/fib"
+    "terminal.integrated.cwd": "${workspaceFolder}/func"
 }

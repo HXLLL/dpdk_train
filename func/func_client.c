@@ -33,6 +33,8 @@
 
 #include "../utils/argparse.h"
 
+#include "func.h"
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -57,12 +59,12 @@ int64_t pw(int64_t x, int64_t y, int64_t MOD) {
     return ans;
 }
 
-int ARGS_port=0;
-int ARGS_cnt=4;
-int ARGS_n=10;
-int ARGS_outstanding=32;
-int ARGS_base=2;
-int ARGS_mod=1e9+7;
+int ARGS_port = 0;
+int ARGS_cnt = 4;
+int ARGS_n = 10;
+int ARGS_outstanding = 32;
+int ARGS_base = 2;
+int ARGS_mod = 1e9+7;
 
 struct argparse_option options[] = {
     OPT_INTEGER('p', "port", &ARGS_port, "port to send & recv"),
@@ -149,14 +151,12 @@ uint64_t *msg;
 struct rte_ether_addr s_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xa5, 0x9a}};
 struct rte_ether_addr d_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xb2, 0xea}};
 uint16_t ether_type = 0x0a00;
-struct rte_mbuf *pkt[BURST_SIZE];
-int64_t ans[MAX_REQUEST];
-struct __attribute__ ((packed)) func_request {
-    int id;
-    uint64_t x;
-    uint64_t y;
-    uint64_t MOD;
-};
+struct rte_mbuf *send_buffer[BURST_SIZE];
+struct rte_mbuf *recv_buffer[BURST_SIZE];
+int64_t std_ans[MAX_REQUEST];
+uint64_t req_cnt;
+int outstanding;
+
 
 /* make request */
 /* | ethernet_header | function_id | parameters               |
@@ -175,46 +175,50 @@ struct rte_mbuf *make_request(int64_t n) {
 
     struct func_request *func_req;
     func_req = rte_pktmbuf_mtod(pkt, struct func_request*);
-    func_req->id = 1;
+    func_req->func_id = 1;
+    func_req->req_id = ++req_cnt;
     func_req->x = ARGS_base;
     func_req->y = n;
     func_req->MOD = ARGS_mod;
+
+    std_ans[func_req->req_id] = pw(func_req->x, func_req->y, func_req->MOD);
+
     return pkt;
 }
 
-int send_request(void) {
-    make_request(&pkt[0]);
-    pkt[0] = rte_pktmbuf_alloc(mbuf_pool);
+
+int send_request(int n) {
+    send_buffer[0] = make_request(n);
     int pkt_size = sizeof(uint64_t) + sizeof(struct rte_ether_hdr);
-    pkt[0]->data_len = pkt_size;
-    pkt[0]->pkt_len = pkt_size;
+    send_buffer[0]->data_len = pkt_size;
+    send_buffer[0]->pkt_len = pkt_size;
 
-    int nb_tx = rte_eth_tx_burst(2, 0, pkt, 1);
-
-    rte_pktmbuf_free(pkt[0]);
+    int nb_tx = rte_eth_tx_burst(2, 0, send_buffer, 1);
     return 0;
 }
-uint64_t recv_response(void) {
+int recv_response(void) {
     int nb_rx=0;
-
-    pkt[0] = rte_pktmbuf_alloc(mbuf_pool);
-    while (!nb_rx) {
-        nb_rx = rte_eth_rx_burst(2, 0, pkt, BURST_SIZE);
+    for (int i=0;recv_buffer[i];) {
+        recv_buffer[i] = NULL;
+        ++i;
     }
-    msg = (uint64_t*)(rte_pktmbuf_mtod(pkt[0], char*) + sizeof(struct rte_ether_hdr));
-    rte_pktmbuf_free(pkt[0]);
-    return *msg;
+    while (!nb_rx) {
+        nb_rx = rte_eth_rx_burst(2, 0, recv_buffer, BURST_SIZE);
+    }
+    return nb_rx;
+}
+int check_response(struct rte_mbuf* resp) {
+    struct func_response* r;
+    r = rte_pktmbuf_mtod(resp, struct func_response*);
+    return r->ans == std_ans[r->req_id];
 }
 
 /*
  * The main function, which does initialization and calls the per-lcore
  * functions.
  */
-    int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-    printf("%d\n", sizeof(struct func_request));
-    return 0;
     unsigned nb_ports;
     uint8_t portid;
 
@@ -258,14 +262,36 @@ main(int argc, char *argv[])
     if (argc > 1) {
         times = strtol(argv[1], NULL, 10);
     }
+
     int i;
+    uint64_t last_report = rte_rdtsc();
+    double every_second = 1.0;
+    uint64_t every = (int)(every_second * rte_get_tsc_hz());
+    uint64_t report_cnt = 0;
     double total = 0;
-    for (i=1;i<=times;++i) {
-        uint64_t start = send_timestamp();
-        recv_response();
-        uint64_t rtt = rte_rdtsc() - start;
-        printf("iter %d: rtt = %.3lf us\n", i, 1.0 * rtt / rte_get_tsc_hz() * 1e6);
-        total += rtt;
+    for (i=1;i<=ARGS_n;++i) {
+        int nb_rx = recv_response();
+        outstanding -= nb_rx;
+        report_cnt += nb_rx;
+        // for (int j=0;j!=nb_rx;++j) {
+        //     int flag = check_response(&recv_buffer[j]);
+        //     if (!flag) {
+        //         puts("ERROR! ...");
+        //         return 0;
+        //     }
+        // }
+
+        if (rte_rdtsc() - last_report > every) {
+            printf("tput: %.3lf\n", report_cnt / every_second);
+            report_cnt = 0;
+            last_report = rte_rdtsc();
+        }
+
+        if (outstanding == ARGS_outstanding) continue;
+
+        send_request(i);
+        ++outstanding;
+
         sleep(1);
     }
     printf("avg rtt: %.3lf us\n", total / times / rte_get_tsc_hz() * 1e6);
