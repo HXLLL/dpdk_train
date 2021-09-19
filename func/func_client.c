@@ -49,6 +49,7 @@
 #define NUM_MBUFS 8191
 #define MBUF_CACHE_SIZE 250
 #define BURST_SIZE 32
+#define MAX_REQUEST 10000000
 
 int64_t pw(int64_t x, int64_t y, int64_t MOD) {
     int64_t ans=1;
@@ -138,23 +139,44 @@ port_init(uint8_t port, struct rte_mempool *mbuf_pool)
 
 struct rte_mempool *mbuf_pool;
 
-struct rte_ether_hdr *eth_hdr;
 uint64_t *msg;
 
 struct rte_ether_addr s_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xa5, 0x9a}};
 struct rte_ether_addr d_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xb2, 0xea}};
 uint16_t ether_type = 0x0a00;
 struct rte_mbuf *pkt[BURST_SIZE];
+int64_t ans[MAX_REQUEST];
+struct __attribute__ ((packed)) func_request {
+    int id;
+    uint64_t x;
+    uint64_t y;
+    uint64_t MOD;
+};
 
-uint64_t  send_request(void) {
-    pkt[0] = rte_pktmbuf_alloc(mbuf_pool);
-    eth_hdr = rte_pktmbuf_mtod(pkt[0], struct rte_ether_hdr*);
+/* make request */
+/* | ethernet_header | function_id | parameters               |
+ * | 14 bytes        | 4bytes      | 8bytes + 8bytes + 8bytes |
+ * |                 |             | x        y        MOD    |
+ *
+ ***/
+struct rte_mbuf *make_request(int64_t n) {
+    struct rte_mbuf *pkt = rte_pktmbuf_alloc(mbuf_pool);
+
+    struct rte_ether_hdr *eth_hdr;
+    eth_hdr = rte_pktmbuf_mtod(pkt, struct rte_ether_hdr*);
     eth_hdr->d_addr = d_addr;
     eth_hdr->s_addr = s_addr;
     eth_hdr->ether_type = ether_type;
-    msg = (uint64_t*) (rte_pktmbuf_mtod(pkt[0], char*) + sizeof(struct rte_ether_hdr));
-    uint64_t now = rte_rdtsc();
-    *msg = now;
+
+    struct func_request *func_req;
+    func_req = rte_pktmbuf_mtod(pkt, struct func_request*);
+    func_req->id = 1;
+    return pkt;
+}
+
+int send_request(void) {
+    make_request(&pkt[0]);
+    pkt[0] = rte_pktmbuf_alloc(mbuf_pool);
     int pkt_size = sizeof(uint64_t) + sizeof(struct rte_ether_hdr);
     pkt[0]->data_len = pkt_size;
     pkt[0]->pkt_len = pkt_size;
@@ -162,7 +184,7 @@ uint64_t  send_request(void) {
     int nb_tx = rte_eth_tx_burst(2, 0, pkt, 1);
 
     rte_pktmbuf_free(pkt[0]);
-    return now;
+    return 0;
 }
 uint64_t recv_response(void) {
     int nb_rx=0;
@@ -183,9 +205,7 @@ uint64_t recv_response(void) {
     int
 main(int argc, char *argv[])
 {
-    for (int i=1;i<=64;++i) {
-        printf("%ld\n", pw(2, i, 1e9+7));
-    }
+    printf("%d\n", sizeof(struct func_request));
     return 0;
     unsigned nb_ports;
     uint8_t portid;

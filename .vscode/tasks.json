@@ -3,8 +3,8 @@
 	"tasks": [
 		{
 			"type": "shell",
-			"label": "build fib",
-			"command": "cd fib; make",
+			"label": "build func",
+			"command": "cd func; make",
 			"problemMatcher": [
 				"$gcc"
 			],
