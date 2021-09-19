@@ -4,7 +4,7 @@
 		{
 			"type": "shell",
 			"label": "build func",
-			"command": "cd func; make",
+			"command": "./scripts/build.sh",
 			"problemMatcher": [
 				"$gcc"
 			],
