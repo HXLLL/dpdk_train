@@ -19,6 +19,8 @@
 
 #define ether_mtod(pkt, type) (type)(rte_pktmbuf_mtod(pkt, char*) + sizeof(struct rte_ether_hdr))
 
+#define INFO( fmt,  ... ) fprintf(stderr, "[INFO] " fmt "\n",  __VA_ARGS__)
+
 struct __attribute__ ((packed)) func_request {
     int func_id;
     uint64_t req_id;

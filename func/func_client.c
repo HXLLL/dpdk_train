@@ -246,10 +246,12 @@ int main(int argc, char *argv[])
     double every_second = 1.0;
     uint64_t every = (int)(every_second * rte_get_tsc_hz());
     uint64_t report_cnt = 0;
+    INFO("%s", "begin to send reqs");
     for (i=1;i<=ARGS_n;++i) {
         int nb_rx = rte_eth_rx_burst(ARGS_port, 0, recv_buffer, BURST_SIZE);
         outstanding -= nb_rx;
         report_cnt += nb_rx;
+        INFO("received %d resp", nb_rx);
         for (int i=0;i!=nb_rx;++i) {
             rte_pktmbuf_free(recv_buffer[i]);
             recv_buffer[i] = NULL;
@@ -270,6 +272,7 @@ int main(int argc, char *argv[])
 
         if (outstanding == ARGS_outstanding) continue;
 
+        INFO("sent req %d", i);
         send_request(i);
         ++outstanding;
 

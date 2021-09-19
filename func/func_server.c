@@ -219,14 +219,17 @@ int main(int argc, char *argv[])
     double every_second = 1.0;
     uint64_t every = (int)(every_second * rte_get_tsc_hz());
     uint64_t report_cnt = 0;
+    INFO("%s", "start listening");
     for (;;) {
         int nb_rx = rte_eth_rx_burst(ARGS_port, 0, recv_buffer, BURST_SIZE);
+        INFO("received %d reqs", nb_rx);
         for (int i=0;i!=nb_rx;++i) {
             send_buffer[i] = make_response(recv_buffer[i]);
             rte_pktmbuf_free(recv_buffer[i]);
             recv_buffer[i] = NULL;
         }
         int nb_tx = rte_eth_tx_burst(ARGS_port, 0, send_buffer, nb_rx);
+        INFO("sent %d resps", nb_rx);
 
         report_cnt += nb_tx;
 
