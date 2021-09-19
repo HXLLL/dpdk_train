@@ -61,11 +61,16 @@ int ARGS_port=0;
 int ARGS_cnt=4;
 int ARGS_n=10;
 int ARGS_outstanding=32;
+int ARGS_base=2;
+int ARGS_mod=1e9+7;
+
 struct argparse_option options[] = {
     OPT_INTEGER('p', "port", &ARGS_port, "port to send & recv"),
     OPT_INTEGER('c', "cnt", &ARGS_cnt, "amount of data to send"),
     OPT_INTEGER('n', NULL, &ARGS_n, "nth item to be calculated"),
     OPT_INTEGER(0, "outstanding", &ARGS_outstanding, "maximum outstanding requests"),
+    OPT_INTEGER('b', "base", &ARGS_base, "power base"),
+    OPT_INTEGER('m', "mod", &ARGS_mod, "mod"),
 };
 
 static const struct rte_eth_conf port_conf_default = {
@@ -171,6 +176,9 @@ struct rte_mbuf *make_request(int64_t n) {
     struct func_request *func_req;
     func_req = rte_pktmbuf_mtod(pkt, struct func_request*);
     func_req->id = 1;
+    func_req->x = ARGS_base;
+    func_req->y = n;
+    func_req->MOD = ARGS_mod;
     return pkt;
 }
 
