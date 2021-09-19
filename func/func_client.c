@@ -53,13 +53,13 @@
 #define BURST_SIZE 32
 #define MAX_REQUEST 10000000
 
+int64_t (*pw)(int64_t, int64_t, int64_t) = pw_Ologn;
+
 int ARGS_port = 0;
 int ARGS_n = 10;
 int ARGS_outstanding = 32;
 int ARGS_base = 2;
 int ARGS_mod = 1e9+7;
-
-int64_t (*pw)(uint64_t, uint64_t, uint64_t) = pw_Ologn;
 
 struct argparse_option options[] = {
     OPT_INTEGER('p', "port", &ARGS_port, "port to send & recv"),
@@ -153,9 +153,9 @@ int outstanding;
 
 
 /* make request */
-/* | ethernet_header | function_id | parameters               |
- * | 14 bytes        | 4bytes      | 8bytes + 8bytes + 8bytes |
- * |                 |             | x        y        MOD    |
+/* | ethernet_header | func_id |  req_id  | parameters               |
+ * | 14 bytes        | 4bytes  |  8bytes  | 8bytes + 8bytes + 8bytes |
+ * |                 |         |          | x        y        MOD    |
  *
  ***/
 struct rte_mbuf *make_request(int64_t n) {
@@ -168,12 +168,16 @@ struct rte_mbuf *make_request(int64_t n) {
     eth_hdr->ether_type = ether_type;
 
     struct func_request *func_req;
-    func_req = rte_pktmbuf_mtod(pkt, struct func_request*);
+    func_req = ether_mtod(pkt, struct func_request*);
     func_req->func_id = 1;
     func_req->req_id = ++req_cnt;
     func_req->x = ARGS_base;
     func_req->y = n;
     func_req->MOD = ARGS_mod;
+
+    int pkt_size = sizeof(struct func_request) + sizeof(struct rte_ether_hdr);
+    pkt->data_len = pkt_size;
+    pkt->pkt_len = pkt_size;
 
     std_ans[func_req->req_id] = pw(func_req->x, func_req->y, func_req->MOD);
 
@@ -183,9 +187,6 @@ struct rte_mbuf *make_request(int64_t n) {
 
 int send_request(int n) {
     send_buffer[0] = make_request(n);
-    int pkt_size = sizeof(uint64_t) + sizeof(struct rte_ether_hdr);
-    send_buffer[0]->data_len = pkt_size;
-    send_buffer[0]->pkt_len = pkt_size;
 
     int nb_tx = rte_eth_tx_burst(ARGS_port, 0, send_buffer, 1);
     return 0;
@@ -203,7 +204,7 @@ int recv_response(void) {
 }
 int check_response(struct rte_mbuf* resp) {
     struct func_response* r;
-    r = rte_pktmbuf_mtod(resp, struct func_response*);
+    r = ether_mtod(resp, struct func_response*);
     return r->ans == std_ans[r->req_id];
 }
 
@@ -251,11 +252,10 @@ int main(int argc, char *argv[])
         printf("\nWARNING: Too many lcores enabled. Only 1 used.\n");
 
     int i;
-    uint64_t last_report = rte_rdtsc();
+    uint64_t last_report = rte_rdtsc(), start_time = rte_rdtsc();
     double every_second = 1.0;
     uint64_t every = (int)(every_second * rte_get_tsc_hz());
     uint64_t report_cnt = 0;
-    double total = 0;
     for (i=1;i<=ARGS_n;++i) {
         int nb_rx = recv_response();
         outstanding -= nb_rx;
@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
 
         sleep(1);
     }
-    printf("avg rtt: %.3lf us\n", total / times / rte_get_tsc_hz() * 1e6);
+    printf("avg rtt: %.3lf us\n", ARGS_n / start_time / rte_get_tsc_hz() * 1e6);
 
     return 0;
 }
