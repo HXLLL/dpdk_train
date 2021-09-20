@@ -50,7 +50,7 @@
 
 #define NUM_MBUFS 8191
 #define MBUF_CACHE_SIZE 250
-#define BURST_SIZE 32
+#define BURST_SIZE 320
 #define MAX_REQUEST 10000000
 
 int64_t (*pw)(int64_t, int64_t, int64_t) = pw_On;
@@ -148,7 +148,8 @@ struct rte_mbuf *recv_buffer[BURST_SIZE];
 struct rte_mbuf *make_response(struct rte_mbuf *req) {
     struct func_request *r;
     r = ether_mtod(req, struct func_request*);
-    uint64_t ans = pw(r->x, r->y, r->MOD);
+    // uint64_t ans = pw(r->x, r->y, r->MOD);
+    uint64_t ans = 0;
 
     struct rte_mbuf *pkt = rte_pktmbuf_alloc(mbuf_pool);
 
@@ -222,17 +223,17 @@ int main(int argc, char *argv[])
     INFO("%s", "start listening");
     for (;;) {
         int nb_rx = rte_eth_rx_burst(ARGS_port, 0, recv_buffer, BURST_SIZE);
-        INFO("received %d reqs", nb_rx);
+        // INFO("received %d reqs", nb_rx);
         for (int i=0;i!=nb_rx;++i) {
             send_buffer[i] = make_response(recv_buffer[i]);
             rte_pktmbuf_free(recv_buffer[i]);
             recv_buffer[i] = NULL;
         }
         int nb_tx = rte_eth_tx_burst(ARGS_port, 0, send_buffer, nb_rx);
-        INFO("sent %d resps", nb_tx);
+        // INFO("sent %d resps", nb_tx);
 
         report_cnt += nb_tx;
-        sleep(1);
+        // sleep(1);
         if (rte_rdtsc() - last_report > every) {
             printf("tput: %.3lf\n", report_cnt / every_second);
             report_cnt = 0;
