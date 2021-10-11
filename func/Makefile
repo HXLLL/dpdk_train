@@ -2,17 +2,15 @@ LIB_FILE := ../utils/*.c
 
 PKGCONF ?= pkg-config
 
+CC := gcc
 CFLAGS += -g3 $(shell $(PKGCONF) --cflags libdpdk)
 LDFLAGS = $(shell $(PKGCONF) --libs libdpdk)
 
 .PHONY: all
-all: build/func_client build/func_server
+all: build/main
 
-build/func_client: func_client.c $(LIB_FILE) Makefile
-	$(CC) $(CFLAGS) $(LIB_FILE) func_client.c -o $@ $(LDFLAGS)
-
-build/func_server: func_server.c $(LIB_FILE) Makefile
-	$(CC) $(CFLAGS) $(LIB_FILE) func_server.c -o $@ $(LDFLAGS)
+build/main: client.c server.c main.c utils.c $(LIB_FILE)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 .PHONY: clean
 clean:

@@ -4,7 +4,8 @@
         "rte_eal.h": "c",
         "rte_mbuf.h": "c",
         "rte_cycles.h": "c",
-        "rte_ethdev.h": "c"
+        "rte_ethdev.h": "c",
+        "main.h": "c"
     },
     "terminal.integrated.cwd": "${workspaceFolder}/func"
 }
