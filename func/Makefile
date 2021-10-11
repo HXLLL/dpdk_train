@@ -4,7 +4,7 @@ PKGCONF ?= pkg-config
 
 CC := gcc
 CFLAGS += -g3 $(shell $(PKGCONF) --cflags libdpdk)
-LDFLAGS = $(shell $(PKGCONF) --libs libdpdk)
+LDFLAGS = $(shell $(PKGCONF) --libs libdpdk) -lprofiler -lpthread
 
 .PHONY: all
 all: build/main

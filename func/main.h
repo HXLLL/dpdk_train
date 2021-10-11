@@ -3,9 +3,11 @@
 
 #include "../utils/argparse.h"
 
+#include <gperftools/profiler.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <pthread.h>
 #include <inttypes.h>
 #include <rte_eal.h>
 #include <rte_ethdev.h>
@@ -15,12 +17,14 @@
 
 /* Constants */
 
+#define MAX_THREADS 512
+
 #define RX_RING_SIZE 128
 #define TX_RING_SIZE 512
 #define NUM_MBUFS 8191
 #define MBUF_CACHE_SIZE 250
 #define BURST_SIZE 32
-#define MAX_REQUEST 10000000
+#define MAX_REQUEST 100000000
 
 static struct rte_ether_addr client_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xb2, 0xeb}};
 static struct rte_ether_addr server_addr = {{0xb8, 0xce, 0xf6, 0x83, 0xa5, 0x9b}};
@@ -38,6 +42,7 @@ extern int ARGS_outstanding;
 extern int ARGS_base;
 extern int ARGS_mod;
 extern int ARGS_isclient;
+extern int ARGS_thread;
 
 static struct argparse_option options[] = {
     OPT_HELP(),
@@ -47,18 +52,11 @@ static struct argparse_option options[] = {
     OPT_INTEGER('b', "base", &ARGS_base, "power base"),
     OPT_INTEGER('m', "mod", &ARGS_mod, "mod"),
     OPT_INTEGER('c', "isclient", &ARGS_isclient, "instance is client"),
+    OPT_INTEGER('t', "thread", &ARGS_thread, "number of threads"),
     OPT_END(),
 };
 
 /* Global Variables */
-
-struct rte_mempool *mbuf_pool;
-
-extern struct rte_mbuf *send_buffer[BURST_SIZE];
-extern struct rte_mbuf *recv_buffer[BURST_SIZE];
-
-struct rte_ether_addr* s_addr;
-struct rte_ether_addr* d_addr;
 
 /* Structures */
 
@@ -75,20 +73,39 @@ struct __attribute__ ((packed)) func_response {
     int64_t ans;
 };
 
-
 struct thread_params_t {
   size_t id;
-  double* tput;
+  struct rte_ether_addr *s_addr, *d_addr;
+  struct rte_mempool *mbuf_pool;
+};
+
+struct ctrl_blk_t {
+    size_t port_id;
+    size_t queue_id;
+    size_t lid;
+
+    struct rte_mempool *mbuf_pool;
+
+    struct rte_ether_addr *s_addr;
+    struct rte_ether_addr *d_addr;
+
+    struct rte_mbuf *send_buffer[BURST_SIZE];
+    struct rte_mbuf *recv_buffer[BURST_SIZE];
+
+    uint64_t req_cnt;
+    int64_t *std_ans;
+    int outstanding;
 };
 
 /* Functions */
 
-int run_server(struct thread_params_t* params);
-int run_client(struct thread_params_t* params);
+void *run_client(void* p);
+void *run_server(void* p);
 
 /* Utils */
 
-int port_init(uint8_t port, struct rte_mempool *mbuf_pool);
+int port_init(uint8_t port, struct rte_mempool *mbuf_pool[], uint32_t nb_rx_queue, uint32_t nb_tx_queue);
+struct ctrl_blk_t* ctrl_blk_init();
 
 
 #define dump_eth(eth_hdr) printf("packet received, from MAC: %02" PRIx8 " %02" PRIx8\

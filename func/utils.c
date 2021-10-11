@@ -4,10 +4,9 @@ static const struct rte_eth_conf port_conf_default = {
 	.rxmode = { .max_rx_pkt_len = RTE_ETHER_MAX_LEN }
 };
 
-int port_init(uint8_t port, struct rte_mempool *mbuf_pool)
+int port_init(uint8_t port, struct rte_mempool *mbuf_pool[], uint32_t nb_rx_queue, uint32_t nb_tx_queue)
 {
 	struct rte_eth_conf port_conf = port_conf_default;
-	const uint16_t rx_rings = 1, tx_rings = 1;
 	uint16_t nb_rxd = RX_RING_SIZE;
 	uint16_t nb_txd = TX_RING_SIZE;
 	int retval;
@@ -17,7 +16,7 @@ int port_init(uint8_t port, struct rte_mempool *mbuf_pool)
 		return -1;
 
 	/* Configure the Ethernet device. */
-	retval = rte_eth_dev_configure(port, rx_rings, tx_rings, &port_conf);
+	retval = rte_eth_dev_configure(port, nb_rx_queue, nb_tx_queue, &port_conf);
 	if (retval != 0)
 		return retval;
 
@@ -26,15 +25,15 @@ int port_init(uint8_t port, struct rte_mempool *mbuf_pool)
 		return retval;
 
 	/* Allocate and set up 1 RX queue per Ethernet port. */
-	for (q = 0; q < rx_rings; q++) {
+	for (q = 0; q < nb_rx_queue; q++) {
 		retval = rte_eth_rx_queue_setup(port, q, nb_rxd,
-				rte_eth_dev_socket_id(port), NULL, mbuf_pool);
+				rte_eth_dev_socket_id(port), NULL, mbuf_pool[0]);
 		if (retval < 0)
 			return retval;
 	}
 
 	/* Allocate and set up 1 TX queue per Ethernet port. */
-	for (q = 0; q < tx_rings; q++) {
+	for (q = 0; q < nb_tx_queue; q++) {
 		retval = rte_eth_tx_queue_setup(port, q, nb_txd,
 				rte_eth_dev_socket_id(port), NULL);
 		if (retval < 0)
@@ -60,4 +59,10 @@ int port_init(uint8_t port, struct rte_mempool *mbuf_pool)
 	rte_eth_promiscuous_enable(port);
 
 	return 0;
+}
+
+struct ctrl_blk_t* ctrl_blk_init() {
+	struct ctrl_blk_t* cb=(struct ctrl_blk_t*)malloc(sizeof(struct ctrl_blk_t));
+	memset(cb, 0, sizeof(struct ctrl_blk_t));
+	return cb;
 }

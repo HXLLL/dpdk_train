@@ -20,4 +20,4 @@ done
 
 set -x;
 
-rsync -a --delete $LOCAL_DIR/ $DPU_HOST:$DPU_DIR; ssh $DPU_HOST "bash -c \"cd $DPU_DIR/$TARGET; pwd; make clean; make\""
+# rsync -a --delete $LOCAL_DIR/ $DPU_HOST:$DPU_DIR; ssh $DPU_HOST "bash -c \"cd $DPU_DIR/$TARGET; pwd; make clean; make\""
