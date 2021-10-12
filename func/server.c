@@ -51,11 +51,6 @@ void *run_server(void* p) {
     int nb_report = 0;
     INFO("%s", "start listening");
 
-    struct rte_eth_burst_mode mode;
-    rte_eth_rx_burst_mode_get(ARGS_port, 0, &mode);
-    printf("%ld %s\n", mode.flags, mode.info);
-
-
     for (;;) {
         int nb_rx = rte_eth_rx_burst(ARGS_port, 0, cb->recv_buffer, BURST_SIZE);
         ++nb_burst; ++temp_burst;

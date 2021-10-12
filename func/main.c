@@ -29,15 +29,14 @@ int main(int argc, char *argv[]) {
     /* Parse custom parameters. */
     struct argparse argparse;
     argparse_init(&argparse, options, NULL, 0);
-    printf("%d\n", argc);
     argc = argparse_parse(&argparse, argc, argv);
 
     nb_ports = rte_eth_dev_count_avail();
 
     for (int i=0;i!=1;++i) {
         sprintf(mbuf_pool_names[i], "MBUF_POOL_%d", i);
-        mbuf_pool[i] = rte_pktmbuf_pool_create(mbuf_pool_names[i], NUM_MBUFS * nb_ports,
-                MBUF_CACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE, SOCKET_ID_ANY);
+        mbuf_pool[i] = rte_pktmbuf_pool_create(mbuf_pool_names[i], NUM_MBUFS * nb_ports * ARGS_thread,
+                MBUF_CACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE, 0);
         if (mbuf_pool[i] == NULL) {
             INFO("%s", rte_strerror(rte_errno));
             rte_exit(EXIT_FAILURE, "Cannot create mbuf pool\n");
@@ -56,7 +55,7 @@ int main(int argc, char *argv[]) {
             thread_params[i].s_addr = &client_addr;
             thread_params[i].d_addr = &server_addr;
             thread_params[i].mbuf_pool = mbuf_pool[0];
-            pthread_create(&thread_arr[i], NULL, run_client, &thread_params);
+            pthread_create(&thread_arr[i], NULL, run_client, &thread_params[i]);
         }
     } else {
         for (int i=0;i<ARGS_thread;++i) {
@@ -64,7 +63,7 @@ int main(int argc, char *argv[]) {
             thread_params[i].s_addr = &server_addr;
             thread_params[i].d_addr = &client_addr;
             thread_params[i].mbuf_pool = mbuf_pool[0];
-            pthread_create(&thread_arr[i], NULL, run_server, &thread_params);
+            pthread_create(&thread_arr[i], NULL, run_server, &thread_params[i]);
         }
     }
     for (int i=0;i!=ARGS_thread;++i) {

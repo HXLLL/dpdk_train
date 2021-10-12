@@ -63,18 +63,21 @@ void *run_client(void *p) {
     cb->lid = params->id;
     cb->std_ans = (uint64_t*)malloc(sizeof(uint64_t) * ARGS_n);
 
+    INFO("client %ld start working", cb->lid);
+
     int i;
     uint64_t last_report = rte_rdtsc(), start_time = rte_rdtsc();
     double every_second = 1.0;
     uint64_t every = (uint64_t)(every_second * rte_get_tsc_hz());
-    uint64_t report_cnt = 0;
+    uint64_t report_cnt = 0, send_cnt = 0;
     int nb_report = 0;
 
     INFO("%s", "begin to send reqs");
     for (i=1;i<=ARGS_n;) {
         if (rte_rdtsc() - last_report > every) {
-            printf("tput: %.3lf\n", report_cnt / every_second);
-            report_cnt = 0;
+            printf("Client %d: tput: %.3lf, send_rate: %.3lf\n",
+             cb->lid,  report_cnt / every_second, send_cnt / every_second);
+            report_cnt = 0; send_cnt = 0;
             last_report = rte_rdtsc();
 
             //if (i >= 10000) {
@@ -89,7 +92,7 @@ void *run_client(void *p) {
         int nb_rx = rte_eth_rx_burst(ARGS_port, cb->lid, cb->recv_buffer, BURST_SIZE);
         cb->outstanding -= nb_rx;
         report_cnt += nb_rx;
-        // INFO("received %d resp, cb->outstanding=%d", nb_rx, cb->outstanding);
+        // INFO("received %d resp from %d, cb->outstanding=%d", nb_rx, cb->lid, cb->outstanding);
         for (int j=0;j!=nb_rx;++j) {
             // int flag = check_response(recv_buffer[j]);
             int flag=true;
@@ -101,10 +104,13 @@ void *run_client(void *p) {
             cb->recv_buffer[j] = NULL;
         }
 
+        usleep(400000);
+
         if (cb->outstanding == ARGS_outstanding) continue;
 
         // INFO("sent req %d", i);
         send_request(cb, i);
+        ++send_cnt;
         ++cb->outstanding;
 
         ++i;

@@ -1,7 +1,9 @@
 #include "main.h"
 
 static const struct rte_eth_conf port_conf_default = {
-	.rxmode = { .max_rx_pkt_len = RTE_ETHER_MAX_LEN }
+	// .rxmode = { .max_rx_pkt_len = RTE_ETHER_MAX_LEN }
+	.rxmode = { .mq_mode = ETH_MQ_RX_RSS , .max_rx_pkt_len = RTE_ETHER_MAX_LEN },
+	.rx_adv_conf = { .rss_conf = NULL },
 };
 
 int port_init(uint8_t port, struct rte_mempool *mbuf_pool[], uint32_t nb_rx_queue, uint32_t nb_tx_queue)
